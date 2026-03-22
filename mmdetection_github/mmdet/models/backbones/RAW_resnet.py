@@ -4,7 +4,6 @@ import warnings
 import os
 import torch
 import torch.nn as nn
-import torchvision
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer, build_plugin_layer
 from mmengine.model import BaseModule
@@ -552,35 +551,31 @@ class RAW_ResNet(BaseModule):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def forward(self, x, batch_data_samples):
+    def forward(self, x):
         x = self.pre_encoder(x) # Input-level Adapter
         if self.w_lut:  # I1, I2, I3, I4
-            ada = self.model_adapter([x[0], x[1], x[2], x[3]]) # 1 24 104 152
+            ada = self.model_adapter([x[0], x[1], x[2], x[3]])
         else:   # I1, I2, I3
             ada = self.model_adapter([x[0], x[1], x[2]])
-        x = x[-1]  # 4 3 416 608
-        # if self.training == False:
-        #     path = batch_data_samples[0].metainfo['img_path']
-        #     file_name = os.path.basename(path)
-        #     full_path = os.path.join('/home1/guojs/codes/Dark-ISP/middle_imgs/', file_name)
-        #     torchvision.utils.save_image(x, full_path)
+        x = x[-1]  
+        
         """Forward function."""
         if self.deep_stem:  # False
             x = self.stem(x)
         else:               # True
-            x = self.conv1(x) # 4 64 208 304
+            x = self.conv1(x)
             x = self.norm1(x)
             x = self.relu(x)
-        x = self.maxpool(x) # 1 64 104 152 
+        x = self.maxpool(x)
         #print('input shape', x.shape)
-        outs = [] 
+        outs = []
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)
             x = res_layer(x)
             if i <=2:  
                 x, ada = self.merge_blocks[i](x, ada, ratio=self.merge_ratio)
             if i in self.out_indices:   # self.out_indices (0,1,2,3)
-                outs.append(x) # 形状和 merge 前一样
+                outs.append(x)
         return tuple(outs)
 
     def train(self, mode=True):

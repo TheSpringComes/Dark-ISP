@@ -1,5 +1,4 @@
 import torch
-import torchvision
 import torch.nn as nn
 import os
 
@@ -53,20 +52,20 @@ class Kernel_Predictor(nn.Module):
         self.r2_base = nn.Parameter(torch.FloatTensor([2]), requires_grad=False)
 
     def forward(self, x):
-        d_x = self.kv_downsample(x).flatten(2).transpose(1, 2)  # 1 64 26 38 -> 1 988 64
+        d_x = self.kv_downsample(x).flatten(2).transpose(1, 2)
         B, N, C = d_x.shape
-        k = self.k(d_x).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3) # 1 1 988
+        k = self.k(d_x).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
         v = self.v(d_x).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
-        # 1 4 64 -> 1 1 4 64 
+
         q = self.q.expand(B, -1, -1).view(B, -1, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
         
-        attn = (q @ k.transpose(-2, -1)) * self.scale # 1 1 4 988
+        attn = (q @ k.transpose(-2, -1)) * self.scale
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
         out = (attn @ v).transpose(1, 2).reshape(B, 4, C)
         out = self.proj(out)
-        out = self.proj_drop(out)  # 1 4 64 
-        out = self.down(out).squeeze(-1) # 1 4
+        out = self.proj_drop(out)
+        out = self.down(out).squeeze(-1)
         
         out = torch.unbind(out, 1)
         r1, r2, gain, sigma = out[0], out[1], out[2], out[3]
@@ -125,8 +124,8 @@ class Matrix_Predictor(nn.Module):
         out = (attn @ v).transpose(1, 2).reshape(B, 9 + 1, C)
         out = self.proj(out)
         out = self.proj_drop(out)
-        out = self.down(out) # 1 10 1
-        out, distance = out[:, :9, :], out[:, 9:, :].squeeze(-1) # 1 9 1 , 1 1
+        out = self.down(out)
+        out, distance = out[:, :9, :], out[:, 9:, :].squeeze(-1)
         out = out.view(B, 3, 3)
         
         ccm_matrix = 0.1 * out + self.ccm_base

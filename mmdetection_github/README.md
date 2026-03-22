@@ -21,13 +21,13 @@ Unzip and place it in $./data$ under this folder, which format as:
 
 **PASCAL RAW Dataset** (RAW detection dataset, normal-light/ low-light/ over-exposure):
 
-Download LOD dataset from [Google Drive](https://drive.google.com/file/d/1686W89ALVvtfUvK8NMvqWaUCTLBqhW-p/view?usp=sharing) or [百度网盘 (passwd: kjv9)](https://pan.baidu.com/s/1O76R8ZFZdLw88N0b3hT2Tw).
+Download PASCAL RAW dataset from [Google Drive](https://drive.google.com/file/d/1686W89ALVvtfUvK8NMvqWaUCTLBqhW-p/view?usp=sharing) or [百度网盘 (passwd: kjv9)](https://pan.baidu.com/s/1O76R8ZFZdLw88N0b3hT2Tw).
 
 Unzip and place it in $./data$ under this folder, which format as:
 
 ```
 --  data
-     -- PASCAL_RAW_github
+     -- PASCAL_RAW
          -- annotations
          -- original (original RAW, demosaic RAW normal-light & over-exposure & low-light)
          -- compare_ISP (ISP methods, InvISP, ECCV16-ISP)
@@ -120,21 +120,25 @@ RetinaNet - ResNet50 backbone:
 Evaluation of RAW-Adapter or comparision methods, only need single GPU (RAW-Adapter, ResNet18, Low-light for example), if you need visulization, please add "--show-dir": 
 
 ```
-python tools/test.py configs/PASCALRAW_Res18/Low_Light_raw_adapter_res18.py https://github.com/cuiziteng/ECCV_RAW_Adapter/releases/download/1.0.2/LL_RAW_Adapter_res18.pth
+python tools/test.py configs/PASCALRAW_Res18/Low_Light_raw_adapter_res18.py   https://github.com/cuiziteng/ECCV_RAW_Adapter/releases/download/1.0.2/LL_RAW_Adapter_res18.pth
 ```
 
 ### 📖 4: Model Training (Optional)
 
-We default train all RetinaNet model on 1 GPU: (LOD dataset, RAW-Adapter for example)
+We default train all RetinaNet model on 1 GPU: (PASCAL RAW dataset, RAW-Adapter (ResNet-18) for example)
 
 ```
-python tools/train.py configs/LOD/R_Net_raw_adapter.py
+python tools/train.py configs/PASCALRAW_Res18/Normal_Light_raw_adapter_res18.py   ## Normal-light
+
+python tools/train.py configs/PASCALRAW_Res18/Low_Light_raw_adapter_res18.py   ## Low-light
+
+python tools/train.py configs/PASCALRAW_Res18/Over_Exp_raw_adapter_res50.py   ## Over-exposure
 ```
 
 We default train all SP-RCNN model on 4 GPUs: (LOD dataset, RAW-Adapter for example)
 
 ```
-CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29588 bash tools/dist_train.sh configs/LOD/SpRCNN_raw_adapter.py
+CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29588 bash tools/dist_train.sh configs/LOD/SpRCNN_raw_adapter.py 4
 ```
 
 

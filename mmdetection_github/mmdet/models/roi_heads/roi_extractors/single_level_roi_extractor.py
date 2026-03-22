@@ -105,8 +105,6 @@ class SingleRoIExtractor(BaseRoIExtractor):
             if inds.numel() > 0:
                 rois_ = rois[inds]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
-                if (roi_feats_t > 1e10).any():
-                    raise ValueError("The tensor contains values greater than 1e15, terminating the program.")
                 roi_feats[inds] = roi_feats_t
             else:
                 # Sometimes some pyramid levels will not be used for RoI
@@ -118,6 +116,4 @@ class SingleRoIExtractor(BaseRoIExtractor):
                 roi_feats += sum(
                     x.view(-1)[0]
                     for x in self.parameters()) * 0. + feats[i].sum() * 0.
-                if (roi_feats > 1e15).any():
-                    raise ValueError("The tensor contains values greater than 1e15, terminating the program.")
         return roi_feats

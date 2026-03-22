@@ -187,8 +187,8 @@ class StandardRoIHead(BaseRoIHead):
                 - `bbox_feats` (Tensor): Extract bbox RoI features.
                 - `loss_bbox` (dict): A dictionary of bbox loss components.
         """
-        rois = bbox2roi([res.priors for res in sampling_results]) # priors shape 512,4
-        bbox_results = self._bbox_forward(x, rois) # rois shape 4*512, 5
+        rois = bbox2roi([res.priors for res in sampling_results])
+        bbox_results = self._bbox_forward(x, rois)
 
         bbox_loss_and_target = self.bbox_head.loss_and_target(
             cls_score=bbox_results['cls_score'],

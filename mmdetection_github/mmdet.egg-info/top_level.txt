@@ -1,2 +1,1 @@
 mmdet
-mmdet_plugin

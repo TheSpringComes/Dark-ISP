@@ -12,21 +12,13 @@ import torch
 import torch.nn as nn
 from typing import List, Tuple, Union
 import torch.utils.checkpoint as cp
-from .LOD_Adapter.input_adapter import Input_level_Adapeter
 from mmcv.cnn import build_conv_layer, build_norm_layer, build_plugin_layer
 from mmengine.model import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
-from .FeaEnhancer.feat_enhancer import FeatEnHancer
-from .RAOD_Adapter.RAOD import Adaptive_Module
-from .IA_ISP.IA_ISP import ImageProcessor
-from .IA_ISP.config_lowlight import cfg
 from mmdet.registry import MODELS
 
 from ..layers import ResLayer
-from .LIS.CustomConv import *
-from .RAW_Adapter.input_adapter import Input_level_Adapeter
-# Model-level Adapter
-from .RAW_Adapter.model_adapter import Model_level_Adapeter, Merge_block
+
 # Input-level Adapter
 # Model-level Adapter
 from .Dark_modules.utils import color_transform, default_ISP, cosine_similarity
@@ -440,32 +432,6 @@ class Dark_ResNet(BaseModule):
         self.nonlinear3 = Zero_DCE()
         
         self.model = model
-        if self.model == "Raw-adapter":
-            self.pre_encoder = Input_level_Adapeter(mode = dict(type='low'), lut_dim = 32, k_size=3, w_lut=True)    
-            self.model_adapter = Model_level_Adapeter(in_c=3, in_dim=12, w_lut=True)
-            self.merge_1 = Merge_block(fea_c=64, ada_c=12, mid_c=32, return_ada=True)
-            self.merge_2 = Merge_block(fea_c=128, ada_c=24, mid_c=32, return_ada=True)
-            self.merge_3 = Merge_block(fea_c=256, ada_c=48, mid_c=64, return_ada=False)
-            self.merge_blocks = [self.merge_1, self.merge_2, self.merge_3]
-            self.merge_ratio = merge_ratio  # Feature Merge Ratio
-        elif self.model == "Enhancer":
-            self.enhancer = FeatEnHancer(in_channels)
-        elif self.model == "LIS":
-            self.AdaD = nn.ModuleList([
-                nn.Sequential(
-                    nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-                    # nn.MaxPool2d(kernel_size=1, stride=1, padding=0),
-                    # nn.MaxPool2d(kernel_size=2, stride=1),
-                    # AdaDConv(in_channels=64, kernel_size=3, stride=2, groups=64),
-                ),
-                AdaDConv(in_channels=fea_c_s[0], kernel_size=3, stride=1, groups=fea_c_s[0]),
-                AdaDConv(in_channels=fea_c_s[1], kernel_size=3, stride=1, groups=fea_c_s[1]),
-                AdaDConv(in_channels=fea_c_s[2], kernel_size=3, stride=1, groups=fea_c_s[2]),
-            ])
-        elif self.model == "RAOD":
-            self.pre_processor = Adaptive_Module(in_ch=3, nf=16, gamma_range=[1.,4.])
-        elif self.model == "IA_ISP":
-            self.pre_processor = ImageProcessor(cfg)
         
         self._make_stem_layer(in_channels, stem_channels)
         self.fea_c_s = fea_c_s
@@ -647,26 +613,43 @@ class Dark_ResNet(BaseModule):
             else:
                 loss_mat = torch.zeros_like(x_l)
             # loss_mat = torch.zeros_like(x_l)  # For Inference
-        
-        if self.model == "Enhancer":
-            x_l = self.enhancer(x_l)
-        elif self.model == "Raw-adapter":
-            x = self.pre_encoder(x_l) # Input-level Adapter
-            # ada = self.model_adapter([x[0], x[1], x[2], x[3]]) # 1 24 104 152
-            x_l = x[-1]  # 4 3 416 608
-        elif self.model == "RAOD":
-            x_l = self.pre_processor(x_l)
-        elif self.model == "IA_ISP":
-            x_l = self.pre_processor(x_l)
-        """Forward function."""
-        if self.deep_stem:  # False
-            x = self.stem(x_l)
-        else:               # True
-            x = self.conv1(x_l)   
-            x = self.norm1(x)   
+        else:
+            raise ValueError(
+                f'Unknown ISP_version={self.version!r}; use one of "v0", "v1", "v2".')
+
+        x = x_l
+        # Stem is built with `in_channels` (default 3, matching torchvision ResNet).
+        # ISP must output the same channel count before the 7x7 conv expands to 64.
+        if not self.deep_stem:
+            stem_in = self.conv1.in_channels
+        else:
+            stem_in = self.stem[0].in_channels
+        if x.shape[1] != stem_in:
+            if x.shape[1] == 4 and stem_in == 3:
+                x = torch.stack(
+                    [x[:, 0, ...],
+                     torch.mean(x[:, [1, 3], ...], dim=1),
+                     x[:, 2, ...]],
+                    dim=1)
+            else:
+                raise RuntimeError(
+                    f'Dark_ResNet: after ISP, features have {x.shape[1]} channels but stem '
+                    f'expects {stem_in}. Set backbone `in_channels` to match ISP output, '
+                    f'or fix ISP / data (e.g. npz `im` should be HxWx4 Bayer for RAW).')
+
+        if self.deep_stem:
+            x = self.stem(x)
+        else:
+            x = self.conv1(x)
+            x = self.norm1(x)
             x = self.relu(x)
-        if self.model != "LIS":
-            x = self.maxpool(x)      
+        x = self.maxpool(x)
+        if x.shape[1] != self.stem_channels:
+            raise RuntimeError(
+                f'Dark_ResNet: after stem+maxpool expected {self.stem_channels} channels, '
+                f'got {x.shape[1]}. The ResNet body expects 64-wide features here, not '
+                f'RAW Bayer (4 ch). Check stem / pretrained loading and ISP path.')
+
         outs = []
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)
@@ -747,3 +730,4 @@ class Dark_ResNet(BaseModule):
                 # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+        return self

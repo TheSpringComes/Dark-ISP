@@ -8,7 +8,7 @@ import torch
 from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
-from mmengine.fileio import get
+from mmengine.fileio import get, get_local_path
 from mmengine.structures import BaseDataElement
 
 from mmdet.registry import TRANSFORMS
@@ -61,6 +61,62 @@ class LoadImageFromNDArray(LoadImageFromFile):
         results['img'] = img
         results['img_shape'] = img.shape[:2]
         results['ori_shape'] = img.shape[:2]
+        return results
+
+
+@TRANSFORMS.register_module()
+class LoadRAWImageFromFile(BaseTransform):
+    """从 ``img_path`` 加载 LOD/NOD 风格的 RAW `.npz` 文件。
+
+    期望 `.npz` 至少包含键：
+    - ``im``: RAW 图像，形状 (H, W, C)
+    - 以及可选的元信息：``gt``, ``iso``, ``wb``, ``white_level``,
+      ``black_level``, ``ccm``, ``raw_pattern``, ``exp_time``, ``ratio`` 等。
+
+    这些字段会被放进 ``results``，后续由 ``PackDetInputs`` 收集到
+    ``DetDataSample.metainfo``，供 Dark-ISP / RAW-Adapter 等模块使用。
+    """
+
+    def __init__(self,
+                 to_float32: bool = True,
+                 backend_args: Optional[dict] = None,
+                 postfix: str = 'npz') -> None:
+        self.to_float32 = to_float32
+        self.backend_args = backend_args
+        self.postfix = postfix
+
+    def transform(self, results: dict) -> dict:
+        """从 `.npz` 读取 RAW 图像和元信息。"""
+
+        img_path = results['img_path']
+
+        # 通过 mmengine 取得本地路径（兼容本地/远程存储）
+        with get_local_path(img_path, backend_args=self.backend_args) as local_path:
+            data = np.load(local_path, allow_pickle=True)
+
+        if 'im' not in data:
+            raise KeyError(
+                f'LoadRAWImageFromFile: key "im" not found in npz file: {img_path}'
+            )
+
+        img = data['im']
+        if self.to_float32 and img.dtype != np.float32:
+            img = img.astype(np.float32)
+
+        results['img'] = img
+        h, w = img.shape[:2]
+        results.setdefault('ori_shape', (h, w))
+        results['img_shape'] = (h, w)
+
+        # 将常用 RAW 元信息写入 results，后续由 PackDetInputs 收集
+        meta_keys = [
+            'gt', 'iso', 'wb', 'white_level', 'black_level', 'ccm',
+            'raw_pattern', 'exp_time', 'ratio'
+        ]
+        for key in meta_keys:
+            if key in data:
+                results[key] = data[key]
+
         return results
 
 

@@ -161,7 +161,7 @@ class DetLocalVisualizer(Visualizer):
                     label_text,
                     pos,
                     colors=text_colors[i],
-                    font_sizes=int(30 * scales[i]),
+                    font_sizes=int(13 * scales[i]),
                     bboxes=[{
                         'facecolor': 'black',
                         'alpha': 0.8,

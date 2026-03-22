@@ -64,7 +64,7 @@ class SingleStageRAWDetector(SingleStageDetector):
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
                  cri_pix: OptConfigType = None,
-                 noise_optpath = None,
+                 noise_optpath = None, 
                  data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
@@ -135,20 +135,25 @@ class SingleStageRAWDetector(SingleStageDetector):
         exp_time = []
         ratio = []
         for i in range(len(metainfo)):
-            iso.append(metainfo[i]['iso'])
-            wb.append(metainfo[i]['wb'])
-            white_level.append(metainfo[i]['white_level'])
-            black_level.append(metainfo[i]['black_level'])
-            ccm.append(metainfo[i]['ccm'])
-            exp_time.append(metainfo[i]['exp_time'])
-            ratio.append(metainfo[i]['ratio'])
-        iso = torch.stack(iso)
-        wb = torch.stack(wb)
-        white_level = torch.stack(white_level)
-        black_level = torch.stack(black_level)
-        ccm = torch.stack(ccm)
-        exp_time = torch.stack(exp_time)
-        ratio = torch.stack(ratio)
+            cur = metainfo[i]
+
+            # Each field coming from dataset/meta may be numpy.ndarray;
+            # convert to torch.Tensor before stacking.
+            iso.append(torch.as_tensor(cur['iso']))
+            wb.append(torch.as_tensor(cur['wb']))
+            white_level.append(torch.as_tensor(cur['white_level']))
+            black_level.append(torch.as_tensor(cur['black_level']))
+            ccm.append(torch.as_tensor(cur['ccm']))
+            exp_time.append(torch.as_tensor(cur['exp_time']))
+            ratio.append(torch.as_tensor(cur['ratio']))
+
+        iso = torch.stack(iso).float()
+        wb = torch.stack(wb).float()
+        white_level = torch.stack(white_level).float()
+        black_level = torch.stack(black_level).float()
+        ccm = torch.stack(ccm).float()
+        exp_time = torch.stack(exp_time).float()
+        ratio = torch.stack(ratio).float()
         params = {}
         params['iso'] = iso.to(device)
         params['wb'] = wb.to(device)

@@ -85,15 +85,14 @@ class Model_level_Adapeter(BaseModule):
 
     def forward(self, IMGS):
         if self.w_lut:
-            # 1 12 416 608
             adapter = torch.cat([self.conv_1(IMGS[0]), self.conv_2(IMGS[1]), self.conv_3(IMGS[2]), self.conv_4(IMGS[3])], dim=1)
 
         else:
             adapter = torch.cat([self.conv_1(IMGS[0]), self.conv_2(IMGS[1]), self.conv_3(IMGS[2])], dim=1)
         
         adapter = self.uni_conv(adapter)
-        adapter = self.res_1(adapter)   # Residual Block 1  1 24 104 152
-        adapter = self.res_2(adapter)   # Residual Block 2  1 24 104 152
+        adapter = self.res_1(adapter)   # Residual Block 1 
+        adapter = self.res_2(adapter)   # Residual Block 2
         return adapter
 
 # Feature Merge Block

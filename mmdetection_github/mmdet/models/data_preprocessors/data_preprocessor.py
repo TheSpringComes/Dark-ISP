@@ -224,13 +224,11 @@ class DetRAWDataPreprocessor(ImgDataPreprocessor):
                  rgb_to_bgr: bool = False,
                  boxtype2tensor: bool = True,
                  non_blocking: Optional[bool] = False,
-                 skip_pad: bool = False,
                  batch_augments: Optional[List[dict]] = None):
         super().__init__(
             mean=mean,
             std=std,
             pad_size_divisor=pad_size_divisor,
-            skip_pad=skip_pad,
             pad_value=pad_value,
             bgr_to_rgb=bgr_to_rgb,
             rgb_to_bgr=rgb_to_bgr,
