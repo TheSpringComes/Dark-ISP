@@ -214,8 +214,21 @@ class SparseRoIHead(CascadeRoIHead):
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                         rois)
+
+        if torch.isnan(object_feats).any():
+            print("The object_feats contains NaN values.")
+        
+        if torch.isnan(bbox_feats).any():
+            print("The bbox_feats contains NaN values.")
+
         cls_score, bbox_pred, object_feats, attn_feats = bbox_head(
             bbox_feats, object_feats)
+
+        if torch.isnan(cls_score).any():
+            raise ValueError("The cls_score contains NaN values, terminating the program.")
+        
+        if torch.isnan(bbox_pred).any():
+            raise ValueError("The bbox_pred contains NaN values, terminating the program.")
 
         fake_bbox_results = dict(
             rois=rois,
@@ -231,6 +244,8 @@ class SparseRoIHead(CascadeRoIHead):
             sampling_results=fake_sampling_results,
             bbox_results=fake_bbox_results,
             batch_img_metas=batch_img_metas)
+        
+
         proposal_list = [res.bboxes for res in results_list]
         bbox_results = dict(
             cls_score=cls_score,

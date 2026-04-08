@@ -90,11 +90,11 @@ class RPNHead(AnchorHead):
                 bbox_pred (Tensor): Box energies / deltas for a single scale \
                     level, the channels number is num_base_priors * 4.
         """
-        x = self.rpn_conv(x)
-        x = F.relu(x)
+        x = self.rpn_conv(x) 
+        x = F.relu(x) #16.ji # 3.ji
         rpn_cls_score = self.rpn_cls(x)
         rpn_bbox_pred = self.rpn_reg(x)
-        return rpn_cls_score, rpn_bbox_pred
+        return rpn_cls_score, rpn_bbox_pred #0.ji
 
     def loss_by_feat(self,
                      cls_scores: List[Tensor],

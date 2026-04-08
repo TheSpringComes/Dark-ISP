@@ -5,7 +5,7 @@ from .base_det_dataset import BaseDetDataset
 from .base_semseg_dataset import BaseSegDataset
 from .base_video_dataset import BaseVideoDataset
 from .cityscapes import CityscapesDataset
-from .coco import CocoDataset
+from .coco import CocoDataset, NODDataset, LODDataset
 from .coco_caption import CocoCaptionDataset
 from .coco_panoptic import CocoPanopticDataset
 from .coco_semantic import CocoSegDataset
@@ -35,7 +35,7 @@ from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 from .youtube_vis_dataset import YouTubeVISDataset
 from .pascal_raw import PASCAL_RAW
-from .lod_bmvc21 import LOD_Dataset
+from .lod_bmvc21 import LOD_Dataset, LOD_RAWDAtaset
 from .exdark import ExdarkDataset
 from .acdc_night import ACDC_Dataset_Night
 
@@ -54,5 +54,5 @@ __all__ = [
     'ADE20KInstanceDataset', 'iSAIDDataset', 'V3DetDataset', 'ConcatDataset',
     'ODVGDataset', 'MDETRStyleRefCocoDataset', 'DODDataset',
     'CustomSampleSizeSampler', 'Flickr30kDataset', 'PASCAL_RAW', 'LOD_Dataset',
-    'ExdarkDataset', 'ACDC_Dataset_Night'
+    'ExdarkDataset', 'ACDC_Dataset_Night', 'LOD_RAWDAtaset', 'NODDataset', 'LODDataset'
 ]

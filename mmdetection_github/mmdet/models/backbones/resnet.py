@@ -628,7 +628,7 @@ class ResNet(BaseModule):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def forward(self, x):
+    def forward(self, x, batch_data_samples=None):
         """Forward function."""
         if self.deep_stem:
             x = self.stem(x)
@@ -640,7 +640,7 @@ class ResNet(BaseModule):
         outs = []
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)
-            x = res_layer(x)
+            x = res_layer(x) # [64, 104, 152] [256, 104, 152] [512, 52, 76] [1024 26 38]
             if i in self.out_indices:
                 outs.append(x)
         return tuple(outs)

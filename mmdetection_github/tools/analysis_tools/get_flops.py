@@ -99,12 +99,16 @@ def inference(args, logger):
             model,
             None,
             inputs=data['inputs'],
-            show_table=False,
-            show_arch=False)
+            show_table=True,
+            show_arch=True)
         avg_flops.append(outputs['flops'])
         params = outputs['params']
         result['compute_type'] = 'dataloader: load a picture from the dataset'
     del data_loader
+
+    print(outputs.keys())
+    print(outputs.get('out_arch', 'no out_arch'))
+    print(outputs.get('out_table', 'no out_table'))
 
     mean_flops = _format_size(int(np.average(avg_flops)))
     params = _format_size(params)

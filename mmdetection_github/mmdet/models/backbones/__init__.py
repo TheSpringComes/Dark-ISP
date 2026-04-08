@@ -18,15 +18,16 @@ from .ssd_vgg import SSDVGG
 from .swin import SwinTransformer
 from .trident_resnet import TridentResNet
 from .RAW_resnet import RAW_ResNet
+from .LOD_resnet import LOD_ResNet
+from .SID_resnet import SID_ResNet
+from .LIS_resnet import LIS_ResNet
+from .FeaEn_resnet import Fea_ResNet
 from .dark_resnet import Dark_ResNet
-
-
 
 __all__ = [
     'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet',
     'MobileNetV2', 'Res2Net', 'HourglassNet', 'DetectoRS_ResNet',
     'DetectoRS_ResNeXt', 'Darknet', 'ResNeSt', 'TridentResNet', 'CSPDarknet',
     'SwinTransformer', 'PyramidVisionTransformer',
-    'PyramidVisionTransformerV2', 'EfficientNet', 'CSPNeXt', 'RAW_ResNet', 
-    'Dark_ResNet',
-]
+    'PyramidVisionTransformerV2', 'EfficientNet', 'CSPNeXt', 'RAW_ResNet',
+    'LOD_ResNet', 'SID_ResNet', 'LIS_ResNet', 'Fea_ResNet', 'Dark_ResNet']

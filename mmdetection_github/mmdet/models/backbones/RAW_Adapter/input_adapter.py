@@ -40,6 +40,7 @@ def Gain_Denoise(I1, r1, r2, gain, sigma, k_size=3):  # [9, 9] in LOD dataset, [
                                 [k_size, k_size], \
                                 [r1[i], r2[i]])
         sharp = blur + sigma[i] * (I1[i,:,:,:] - blur)
+        # sharp = I1[i,:,:,:]
         out.append(sharp)
     return torch.stack([out[i] for i in range(I1.shape[0])], dim=0)
 
@@ -85,23 +86,24 @@ class Input_level_Adapeter(nn.Module):
             self.LUT = NILUT(hidden_features=lut_dim)    
         self.out = out
         self.k_size = k_size
-        
-
 
     def forward(self, I1):
         # (1). I1 --> I2: Denoise & Enhancement & Sharpen
         r1, r2, gain, sigma = self.Predictor_K(I1)
         I2 = Gain_Denoise(I1, r1, r2, gain, sigma, k_size=self.k_size)  # (B,C,H,W)
+        # I2 = I1
         I2 = torch.clamp(I2, 1e-5, 1.0) # normal & over-exposure
         
         ccm_matrix, distance = self.Predictor_M(I2)
         # (2). I2 --> I3: White Balance, Shade of Gray
         # (3). I3 --> I4: Camera Colour Matrix Transformation
         I3, I4 = WB_CCM(I2, ccm_matrix, distance) # (B,H,W,C)
-        
+        # I3 = I2.permute(0,2,3,1)
+        # I4 = I2.permute(0,2,3,1)
         if self.w_lut:
         # (4). I4 --> I5: Implicit Neural LUT
             I5 = self.LUT(I4).permute(0,3,1,2)
+            # I5 = I4.permute(0,3,1,2)
             
             if self.out == 'all':   # return all features
                 return [I1, I2, I3.permute(0,3,1,2), I4.permute(0,3,1,2), I5]
@@ -113,8 +115,6 @@ class Input_level_Adapeter(nn.Module):
                 return [I1, I2, I3.permute(0,3,1,2), I4.permute(0,3,1,2)]
             else:
                 return [I4.permute(0,3,1,2)]
-
-
         
         
 if __name__ == "__main__":
